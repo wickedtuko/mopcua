@@ -68,13 +68,15 @@ namespace opcuac
             bool autoAccept = false;
             string endpointURL =  "";
             string nodeIdToSubscribe = "";
+            string nodeIdFile = "";
 
             Mono.Options.OptionSet options = new Mono.Options.OptionSet {
                 { "h|help", "show this message and exit", h => showHelp = h != null },
                 { "a|autoaccept", "auto accept certificates (for testing only)", a => autoAccept = a != null },
                 { "t|timeout=", "the number of seconds until the client stops.", (int t) => stopTimeout = t },
                 { "url=", "Endpoint URL", url => endpointURL = url},
-                { "nodeID=", "Node ID to subscribe", option => nodeIdToSubscribe = option}
+                { "nodeID:", "Node ID to subscribe", option => nodeIdToSubscribe = option},
+                { "NodeFile:", "List of Node IDs to subscribe", option => nodeIdFile = option}
             };
 
             try
@@ -82,7 +84,9 @@ namespace opcuac
                 options.Parse(args);
                 showHelp |= 0 == endpointURL.Length;
 
-                if(!showHelp) { showHelp |= 0 == nodeIdToSubscribe.Length; }
+                if(!showHelp) {
+                    showHelp |= (0 == nodeIdToSubscribe.Length && 0 == nodeIdFile.Length);
+                }
             }
             catch (OptionException e)
             {
