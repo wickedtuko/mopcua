@@ -67,12 +67,14 @@ namespace opcuac
             int stopTimeout = Timeout.Infinite;
             bool autoAccept = false;
             string endpointURL =  "";
+            string nodeIdToSubscribe = "";
 
             Mono.Options.OptionSet options = new Mono.Options.OptionSet {
                 { "h|help", "show this message and exit", h => showHelp = h != null },
                 { "a|autoaccept", "auto accept certificates (for testing only)", a => autoAccept = a != null },
                 { "t|timeout=", "the number of seconds until the client stops.", (int t) => stopTimeout = t },
-                { "url=", "Endpoint URL", url => endpointURL = url}
+                { "url=", "Endpoint URL", url => endpointURL = url},
+                { "nodeID=", "Node ID to subscribe", option => nodeIdToSubscribe = option}
             };
 
             try
@@ -80,6 +82,8 @@ namespace opcuac
                 Console.WriteLine("Here");
                 options.Parse(args);
                 showHelp |= 0 == endpointURL.Length;
+
+                if(!showHelp) { showHelp |= 0 == nodeIdToSubscribe.Length; }
             }
             catch (OptionException e)
             {
@@ -101,26 +105,28 @@ namespace opcuac
                 return (int)ExitCode.ErrorInvalidCommandLine;
             }
 
-            MySampleClient client = new MySampleClient(endpointURL, autoAccept, stopTimeout);
+            OpcClient client = new OpcClient(endpointURL, nodeIdToSubscribe, autoAccept, stopTimeout);
             client.Run();
 
-            return (int)MySampleClient.ExitCode;
+            return (int)OpcClient.ExitCode;
         }
     }
 
-    public class MySampleClient
+    public class OpcClient
     {
         const int ReconnectPeriod = 10;
         Session session;
         SessionReconnectHandler reconnectHandler;
         string endpointURL;
+        string nodeIdToSubscribe;
         int clientRunTime = Timeout.Infinite;
         static bool autoAccept = false;
         static ExitCode exitCode;
 
-        public MySampleClient(string _endpointURL, bool _autoAccept, int _stopTimeout)
+        public OpcClient(string _endpointURL, string _nodeIdToSubscribe, bool _autoAccept, int _stopTimeout)
         {
             endpointURL = _endpointURL;
+            nodeIdToSubscribe = _nodeIdToSubscribe;
             autoAccept = _autoAccept;
             clientRunTime = _stopTimeout <= 0 ? Timeout.Infinite : _stopTimeout * 1000;
         }
@@ -129,7 +135,7 @@ namespace opcuac
         {
             try
             {
-                ConsoleSampleClient().Wait();
+                ConsoleClient().Wait();
             }
             catch (Exception ex)
             {
@@ -166,7 +172,7 @@ namespace opcuac
 
         public static ExitCode ExitCode { get => exitCode; }
 
-        private async Task ConsoleSampleClient()
+        private async Task ConsoleClient()
         {
             Console.WriteLine("1 - Create an Application Configuration.");
             exitCode = ExitCode.ErrorCreateApplication;
@@ -226,7 +232,7 @@ namespace opcuac
             var list = new List<MonitoredItem> {
                 new MonitoredItem(subscription.DefaultItem)
                 {
-                    DisplayName = "ServerStatusCurrentTime", StartNodeId = "i="+Variables.Server_ServerStatus_CurrentTime.ToString()
+                    DisplayName = "ServerStatusCurrentTime", StartNodeId = nodeIdToSubscribe
                 }
             };
             list.ForEach(i => i.Notification += OnNotification);
