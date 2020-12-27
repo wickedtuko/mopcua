@@ -14,4 +14,7 @@ Global
 		{30CA7FE3-393F-477A-8CDC-FA18BDC8BF4E}.Release|x86.ActiveCfg = Release|x86
 		{30CA7FE3-393F-477A-8CDC-FA18BDC8BF4E}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		version = 0.2
+	EndGlobalSection
 EndGlobal
