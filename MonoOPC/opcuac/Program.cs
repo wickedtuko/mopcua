@@ -87,6 +87,15 @@ namespace opcuac
                 if(!showHelp) {
                     showHelp |= (0 == nodeIdToSubscribe.Length && 0 == nodeIdFile.Length);
                 }
+
+                if(nodeIdFile.Length > 0)
+                {
+                    if(!System.IO.File.Exists(nodeIdFile))
+                    {
+                        Console.WriteLine("\nNodeFile {0} does not exist.\n\n", nodeIdFile);
+                        showHelp = true;
+                    }
+                }
             }
             catch (OptionException e)
             {
@@ -108,7 +117,7 @@ namespace opcuac
                 return (int)ExitCode.ErrorInvalidCommandLine;
             }
 
-            OpcClient client = new OpcClient(endpointURL, nodeIdToSubscribe, autoAccept, stopTimeout);
+            OpcClient client = new OpcClient(endpointURL, nodeIdToSubscribe, nodeIdFile, autoAccept, stopTimeout);
             client.Run();
 
             return (int)OpcClient.ExitCode;
@@ -122,14 +131,16 @@ namespace opcuac
         SessionReconnectHandler reconnectHandler;
         string endpointURL;
         string nodeIdToSubscribe;
+        string nodeIdFile;
         int clientRunTime = Timeout.Infinite;
         static bool autoAccept = false;
         static ExitCode exitCode;
 
-        public OpcClient(string _endpointURL, string _nodeIdToSubscribe, bool _autoAccept, int _stopTimeout)
+        public OpcClient(string _endpointURL, string _nodeIdToSubscribe, string _nodeIdFile, bool _autoAccept, int _stopTimeout)
         {
             endpointURL = _endpointURL;
             nodeIdToSubscribe = _nodeIdToSubscribe;
+            nodeIdFile = _nodeIdFile;
             autoAccept = _autoAccept;
             clientRunTime = _stopTimeout <= 0 ? Timeout.Infinite : _stopTimeout * 1000;
         }
