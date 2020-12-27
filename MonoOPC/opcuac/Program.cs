@@ -60,7 +60,7 @@ namespace opcuac
         {
             Console.WriteLine(
                 (Utils.IsRunningOnMono() ? "Mono" : ".Net Core") +
-                " OPC UA Console Client sample");
+                " OPC UA Console Client");
 
             // command line options
             bool showHelp = false;
