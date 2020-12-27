@@ -109,6 +109,9 @@ namespace opcuac
                 Console.WriteLine(Utils.IsRunningOnMono() ?
                     "Usage: mono opcuac.exe [OPTIONS]" :
                     "Usage: dotnet NetCoreConsoleClient.dll [OPTIONS] [ENDPOINTURL]");
+                Console.WriteLine("Version: {0}",
+                    typeof(Program).Assembly.GetName().Version);
+
                 Console.WriteLine();
 
                 // output the options
