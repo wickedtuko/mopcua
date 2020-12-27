@@ -68,13 +68,15 @@ namespace opcuac
             bool autoAccept = false;
             string endpointURL =  "";
             string nodeIdToSubscribe = "";
+            string nodeIdFile = "";
 
             Mono.Options.OptionSet options = new Mono.Options.OptionSet {
                 { "h|help", "show this message and exit", h => showHelp = h != null },
                 { "a|autoaccept", "auto accept certificates (for testing only)", a => autoAccept = a != null },
                 { "t|timeout=", "the number of seconds until the client stops.", (int t) => stopTimeout = t },
                 { "url=", "Endpoint URL", url => endpointURL = url},
-                { "nodeID=", "Node ID to subscribe", option => nodeIdToSubscribe = option}
+                { "nodeID:", "Node ID to subscribe", option => nodeIdToSubscribe = option},
+                { "NodeFile:", "List of Node IDs to subscribe", option => nodeIdFile = option}
             };
 
             try
@@ -82,7 +84,18 @@ namespace opcuac
                 options.Parse(args);
                 showHelp |= 0 == endpointURL.Length;
 
-                if(!showHelp) { showHelp |= 0 == nodeIdToSubscribe.Length; }
+                if(!showHelp) {
+                    showHelp |= (0 == nodeIdToSubscribe.Length && 0 == nodeIdFile.Length);
+                }
+
+                if(nodeIdFile.Length > 0)
+                {
+                    if(!System.IO.File.Exists(nodeIdFile))
+                    {
+                        Console.WriteLine("\nNodeFile {0} does not exist.\n\n", nodeIdFile);
+                        showHelp = true;
+                    }
+                }
             }
             catch (OptionException e)
             {
@@ -104,7 +117,7 @@ namespace opcuac
                 return (int)ExitCode.ErrorInvalidCommandLine;
             }
 
-            OpcClient client = new OpcClient(endpointURL, nodeIdToSubscribe, autoAccept, stopTimeout);
+            OpcClient client = new OpcClient(endpointURL, nodeIdToSubscribe, nodeIdFile, autoAccept, stopTimeout);
             client.Run();
 
             return (int)OpcClient.ExitCode;
@@ -118,14 +131,16 @@ namespace opcuac
         SessionReconnectHandler reconnectHandler;
         string endpointURL;
         string nodeIdToSubscribe;
+        string nodeIdFile;
         int clientRunTime = Timeout.Infinite;
         static bool autoAccept = false;
         static ExitCode exitCode;
 
-        public OpcClient(string _endpointURL, string _nodeIdToSubscribe, bool _autoAccept, int _stopTimeout)
+        public OpcClient(string _endpointURL, string _nodeIdToSubscribe, string _nodeIdFile, bool _autoAccept, int _stopTimeout)
         {
             endpointURL = _endpointURL;
             nodeIdToSubscribe = _nodeIdToSubscribe;
+            nodeIdFile = _nodeIdFile;
             autoAccept = _autoAccept;
             clientRunTime = _stopTimeout <= 0 ? Timeout.Infinite : _stopTimeout * 1000;
         }
@@ -229,18 +244,40 @@ namespace opcuac
             Console.WriteLine("6 - Add a list of items (server current time and status) to the subscription.");
             exitCode = ExitCode.ErrorMonitoredItem;
 
-            var nodeIds = new List<NodeId> { new NodeId(nodeIdToSubscribe) };
-            var dispNames = new List<string>();
-            var errors = new List<ServiceResult>();
-            session.ReadDisplayName(nodeIds, out dispNames, out errors);
-            var _displayName = dispNames[0];
-            var list = new List<MonitoredItem> {
-                new MonitoredItem(subscription.DefaultItem)
+            var list = new List<MonitoredItem>();
+
+            if (nodeIdFile.Length > 0)
+            {
+                System.IO.StreamReader file = new System.IO.StreamReader(nodeIdFile);
+                string line;
+                while ((line = file.ReadLine()) != null)
+                {
+                    var nodeIds = new List<NodeId> { new NodeId(line) };
+                    var dispNames = new List<string>();
+                    var errors = new List<ServiceResult>();
+                    session.ReadDisplayName(nodeIds, out dispNames, out errors);
+                    var _displayName = dispNames[0];
+                    var item = new MonitoredItem(subscription.DefaultItem)
+                    {
+                        DisplayName = _displayName,
+                        StartNodeId = line
+                    };
+                    list.Add(item);
+                }
+            } else {
+                var nodeIds = new List<NodeId> { new NodeId(nodeIdToSubscribe) };
+                var dispNames = new List<string>();
+                var errors = new List<ServiceResult>();
+                session.ReadDisplayName(nodeIds, out dispNames, out errors);
+                var _displayName = dispNames[0];
+                var item = new MonitoredItem(subscription.DefaultItem)
                 {
                     DisplayName = _displayName,
                     StartNodeId = nodeIdToSubscribe
-                }
-            };
+                };
+                list.Add(item);
+            }
+
             list.ForEach(i => i.Notification += OnNotification);
             subscription.AddItems(list);
 
