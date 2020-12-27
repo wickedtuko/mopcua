@@ -66,25 +66,20 @@ namespace opcuac
             bool showHelp = false;
             int stopTimeout = Timeout.Infinite;
             bool autoAccept = false;
+            string endpointURL =  "";
 
             Mono.Options.OptionSet options = new Mono.Options.OptionSet {
                 { "h|help", "show this message and exit", h => showHelp = h != null },
                 { "a|autoaccept", "auto accept certificates (for testing only)", a => autoAccept = a != null },
-                { "t|timeout=", "the number of seconds until the client stops.", (int t) => stopTimeout = t }
+                { "t|timeout=", "the number of seconds until the client stops.", (int t) => stopTimeout = t },
+                { "url=", "Endpoint URL", url => endpointURL = url}
             };
 
-            IList<string> extraArgs = null;
             try
             {
-                extraArgs = options.Parse(args);
-                if (extraArgs.Count > 1)
-                {
-                    foreach (string extraArg in extraArgs)
-                    {
-                        Console.WriteLine("Error: Unknown option: {0}", extraArg);
-                        showHelp = true;
-                    }
-                }
+                Console.WriteLine("Here");
+                options.Parse(args);
+                showHelp |= 0 == endpointURL.Length;
             }
             catch (OptionException e)
             {
@@ -96,7 +91,7 @@ namespace opcuac
             {
                 // show some app description message
                 Console.WriteLine(Utils.IsRunningOnMono() ?
-                    "Usage: mono MonoConsoleClient.exe [OPTIONS] [ENDPOINTURL]" :
+                    "Usage: mono opcuac.exe [OPTIONS]" :
                     "Usage: dotnet NetCoreConsoleClient.dll [OPTIONS] [ENDPOINTURL]");
                 Console.WriteLine();
 
@@ -104,17 +99,6 @@ namespace opcuac
                 Console.WriteLine("Options:");
                 options.WriteOptionDescriptions(Console.Out);
                 return (int)ExitCode.ErrorInvalidCommandLine;
-            }
-
-            string endpointURL;
-            if (extraArgs.Count == 0)
-            {
-                // use OPC UA .Net Sample server 
-                endpointURL = "opc.tcp://localhost:51210/UA/SampleServer";
-            }
-            else
-            {
-                endpointURL = extraArgs[0];
             }
 
             MySampleClient client = new MySampleClient(endpointURL, autoAccept, stopTimeout);
