@@ -244,18 +244,40 @@ namespace opcuac
             Console.WriteLine("6 - Add a list of items (server current time and status) to the subscription.");
             exitCode = ExitCode.ErrorMonitoredItem;
 
-            var nodeIds = new List<NodeId> { new NodeId(nodeIdToSubscribe) };
-            var dispNames = new List<string>();
-            var errors = new List<ServiceResult>();
-            session.ReadDisplayName(nodeIds, out dispNames, out errors);
-            var _displayName = dispNames[0];
-            var list = new List<MonitoredItem> {
-                new MonitoredItem(subscription.DefaultItem)
+            var list = new List<MonitoredItem>();
+
+            if (nodeIdFile.Length > 0)
+            {
+                System.IO.StreamReader file = new System.IO.StreamReader(nodeIdFile);
+                string line;
+                while ((line = file.ReadLine()) != null)
+                {
+                    var nodeIds = new List<NodeId> { new NodeId(line) };
+                    var dispNames = new List<string>();
+                    var errors = new List<ServiceResult>();
+                    session.ReadDisplayName(nodeIds, out dispNames, out errors);
+                    var _displayName = dispNames[0];
+                    var item = new MonitoredItem(subscription.DefaultItem)
+                    {
+                        DisplayName = _displayName,
+                        StartNodeId = line
+                    };
+                    list.Add(item);
+                }
+            } else {
+                var nodeIds = new List<NodeId> { new NodeId(nodeIdToSubscribe) };
+                var dispNames = new List<string>();
+                var errors = new List<ServiceResult>();
+                session.ReadDisplayName(nodeIds, out dispNames, out errors);
+                var _displayName = dispNames[0];
+                var item = new MonitoredItem(subscription.DefaultItem)
                 {
                     DisplayName = _displayName,
                     StartNodeId = nodeIdToSubscribe
-                }
-            };
+                };
+                list.Add(item);
+            }
+
             list.ForEach(i => i.Notification += OnNotification);
             subscription.AddItems(list);
 
