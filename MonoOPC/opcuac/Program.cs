@@ -79,7 +79,6 @@ namespace opcuac
 
             try
             {
-                Console.WriteLine("Here");
                 options.Parse(args);
                 showHelp |= 0 == endpointURL.Length;
 
@@ -229,10 +228,17 @@ namespace opcuac
 
             Console.WriteLine("6 - Add a list of items (server current time and status) to the subscription.");
             exitCode = ExitCode.ErrorMonitoredItem;
+
+            var nodeIds = new List<NodeId> { new NodeId(nodeIdToSubscribe) };
+            var dispNames = new List<string>();
+            var errors = new List<ServiceResult>();
+            session.ReadDisplayName(nodeIds, out dispNames, out errors);
+            var _displayName = dispNames[0];
             var list = new List<MonitoredItem> {
                 new MonitoredItem(subscription.DefaultItem)
                 {
-                    DisplayName = "ServerStatusCurrentTime", StartNodeId = nodeIdToSubscribe
+                    DisplayName = _displayName,
+                    StartNodeId = nodeIdToSubscribe
                 }
             };
             list.ForEach(i => i.Notification += OnNotification);
@@ -281,6 +287,7 @@ namespace opcuac
         {
             foreach (var value in item.DequeueValues())
             {
+                
                 Console.WriteLine("{0}: {1}, {2}, {3}", item.DisplayName, value.Value, value.SourceTimestamp, value.StatusCode);
             }
         }
