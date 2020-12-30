@@ -346,7 +346,7 @@ namespace opcuac
             {
                 foreach (var value in item.DequeueValues())
                 {
-                    Console.WriteLine("{0}: {1}, {2}, {3}", item.DisplayName, value.Value, value.SourceTimestamp.ToLocalTime(), value.StatusCode);
+                    Console.WriteLine("{0}: {1}, {2}, {3}", item.DisplayName, value.Value, value.SourceTimestamp.ToLocalTime().ToString("MM/dd/yyyy hh:mm:ss.fff tt"), value.StatusCode);
                 }
                 
                 is_console_out = false;
