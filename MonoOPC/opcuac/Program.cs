@@ -33,6 +33,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -138,6 +139,9 @@ namespace opcuac
         int clientRunTime = Timeout.Infinite;
         static bool autoAccept = false;
         static ExitCode exitCode;
+        static Stopwatch m_sw = new Stopwatch();
+        static bool m_sw_init = true;
+        static bool is_console_out = true;
 
         public OpcClient(string _endpointURL, string _nodeIdToSubscribe, string _nodeIdFile, bool _autoAccept, int _stopTimeout)
         {
@@ -325,10 +329,25 @@ namespace opcuac
 
         private static void OnNotification(MonitoredItem item, MonitoredItemNotificationEventArgs e)
         {
-            foreach (var value in item.DequeueValues())
+            if(m_sw_init) { m_sw.Start(); m_sw_init = false; }            
+            if (m_sw.ElapsedMilliseconds < 1000) 
             {
-                
-                Console.WriteLine("{0}: {1}, {2}, {3}", item.DisplayName, value.Value, value.SourceTimestamp.ToLocalTime(), value.StatusCode);
+                return; 
+            }
+            else
+            {
+                is_console_out = true;
+                m_sw.Restart();
+            }
+            
+            if (is_console_out)
+            {
+                is_console_out = false;
+                foreach (var value in item.DequeueValues())
+                {
+
+                    Console.WriteLine("{0}: {1}, {2}, {3}", item.DisplayName, value.Value, value.SourceTimestamp.ToLocalTime(), value.StatusCode);
+                }
             }
         }
 
