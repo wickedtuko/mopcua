@@ -142,6 +142,7 @@ namespace opcuac
         static Stopwatch m_sw = new Stopwatch();
         static bool m_sw_init = true;
         static bool is_console_out = true;
+        static int count = 0;
 
         public OpcClient(string _endpointURL, string _nodeIdToSubscribe, string _nodeIdFile, bool _autoAccept, int _stopTimeout)
         {
@@ -332,6 +333,7 @@ namespace opcuac
             if(m_sw_init) { m_sw.Start(); m_sw_init = false; }            
             if (m_sw.ElapsedMilliseconds < 1000) 
             {
+                count++;
                 return; 
             }
             else
@@ -342,12 +344,14 @@ namespace opcuac
             
             if (is_console_out)
             {
-                is_console_out = false;
                 foreach (var value in item.DequeueValues())
                 {
-
                     Console.WriteLine("{0}: {1}, {2}, {3}", item.DisplayName, value.Value, value.SourceTimestamp.ToLocalTime(), value.StatusCode);
                 }
+                
+                is_console_out = false;
+                Console.WriteLine("Node count : {0}", count);
+                count = 0;
             }
         }
 
