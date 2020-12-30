@@ -1,6 +1,14 @@
 # mopcua
 Mono OPC UA 
 
+To build from the command line
+```shell
+sudo apt install nuget
+cd ~/<solution_dir>
+nuget restore MonoOPC.sln
+msbuild
+```
+
 ## Mono OPC UA Client
 Console Mono OPC UA client - subscribe to items
 * Pass nodeID 
