@@ -258,6 +258,7 @@ namespace opcuac
             {
                 System.IO.StreamReader file = new System.IO.StreamReader(nodeIdFile);
                 string line;
+                int cnt = 0;
                 while ((line = file.ReadLine()) != null)
                 {
                     var nodeIds = new List<NodeId> { new NodeId(line) };
@@ -271,6 +272,7 @@ namespace opcuac
                         StartNodeId = line
                     };
                     list.Add(item);
+                    Console.WriteLine("{1}: Adding {0}", line, ++cnt);
                 }
             } else {
                 var nodeIds = new List<NodeId> { new NodeId(nodeIdToSubscribe) };
