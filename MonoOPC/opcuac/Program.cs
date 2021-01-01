@@ -258,22 +258,27 @@ namespace opcuac
             {
                 System.IO.StreamReader file = new System.IO.StreamReader(nodeIdFile);
                 string line;
-                int cnt = 0;
+                var sw = new Stopwatch();
+                sw.Start();
+                Console.WriteLine("Loading node IDs...");
+                //int cnt = 0;
                 while ((line = file.ReadLine()) != null)
                 {
-                    var nodeIds = new List<NodeId> { new NodeId(line) };
-                    var dispNames = new List<string>();
-                    var errors = new List<ServiceResult>();
-                    session.ReadDisplayName(nodeIds, out dispNames, out errors);
-                    var _displayName = dispNames[0];
+                    //var nodeIds = new List<NodeId> { new NodeId(line) };
+                    //var dispNames = new List<string>();
+                    //var errors = new List<ServiceResult>();
+                    //session.ReadDisplayName(nodeIds, out dispNames, out errors);
+                    //var _displayName = dispNames[0];
                     var item = new MonitoredItem(subscription.DefaultItem)
                     {
-                        DisplayName = _displayName,
+                        //DisplayName = _displayName,
                         StartNodeId = line
                     };
                     list.Add(item);
-                    Console.WriteLine("{1}: Adding {0}", line, ++cnt);
+                    //Console.WriteLine("{1}: Adding {0}", line, ++cnt);
                 }
+                sw.Stop();
+                Console.WriteLine("Loading node IDs...done in {0}", sw.Elapsed);
             } else {
                 var nodeIds = new List<NodeId> { new NodeId(nodeIdToSubscribe) };
                 var dispNames = new List<string>();
@@ -332,28 +337,40 @@ namespace opcuac
 
         private static void OnNotification(MonitoredItem item, MonitoredItemNotificationEventArgs e)
         {
-            if(m_sw_init) { m_sw.Start(); m_sw_init = false; }            
-            if (m_sw.ElapsedMilliseconds < 1000) 
-            {
-                count++;
-                return; 
-            }
-            else
-            {
-                is_console_out = true;
-                m_sw.Restart();
-            }
-            
-            if (is_console_out)
+            //if(m_sw_init) { m_sw.Start(); m_sw_init = false; }            
+            //if (m_sw.ElapsedMilliseconds < 1000) 
+            //{
+            //    count++;
+            //    return; 
+            //}
+            //else
+            //{
+            //    is_console_out = true;
+            //    m_sw.Restart();
+            //}
+
+            //if (is_console_out)
+            //{
+            //    foreach (var value in item.DequeueValues())
+            //    {
+            //        Console.WriteLine("{0}: {1}, {2}, {3}", item.DisplayName, value.Value, value.SourceTimestamp.ToLocalTime().ToString("MM/dd/yyyy hh:mm:ss.fff tt"), value.StatusCode);
+            //    }
+
+            //    is_console_out = false;
+            //    Console.WriteLine("Node count : {0}", count);
+            //    count = 0;
+            //}
+
+            if(m_sw_init) { m_sw.Start(); m_sw_init = false; }
+            count++;
+            if ((count % 5000) == 0)
             {
                 foreach (var value in item.DequeueValues())
                 {
-                    Console.WriteLine("{0}: {1}, {2}, {3}", item.DisplayName, value.Value, value.SourceTimestamp.ToLocalTime().ToString("MM/dd/yyyy hh:mm:ss.fff tt"), value.StatusCode);
+                    Console.WriteLine("{0}: {1}, {2}, {3}", item.ResolvedNodeId, value.Value, value.SourceTimestamp.ToLocalTime().ToString("MM/dd/yyyy hh:mm:ss.fff tt"), value.StatusCode);
                 }
-                
-                is_console_out = false;
-                Console.WriteLine("Node count : {0}", count);
-                count = 0;
+                Console.WriteLine("Elapsed time : {0}", m_sw.Elapsed);
+                m_sw.Restart();
             }
         }
 
