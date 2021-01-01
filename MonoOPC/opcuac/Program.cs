@@ -144,6 +144,7 @@ namespace opcuac
         static bool is_console_out = true;
         static int count = 0;
         static int node_count = 0; //number of node IDs loaded
+        static ManualResetEvent quitEvent;
 
         public OpcClient(string _endpointURL, string _nodeIdToSubscribe, string _nodeIdFile, bool _autoAccept, int _stopTimeout)
         {
@@ -167,7 +168,7 @@ namespace opcuac
                 return;
             }
 
-            ManualResetEvent quitEvent = new ManualResetEvent(false);
+            quitEvent = new ManualResetEvent(false);
             try
             {
                 Console.CancelKeyPress += (sender, eArgs) =>
@@ -372,6 +373,10 @@ namespace opcuac
                     Console.WriteLine("{0}: {1}, {2}, {3}", item.ResolvedNodeId, value.Value, value.SourceTimestamp.ToLocalTime().ToString("MM/dd/yyyy hh:mm:ss.fff tt"), value.StatusCode);
                 }
                 Console.WriteLine("Elapsed time : {0}", m_sw.Elapsed);
+                if (m_sw.ElapsedMilliseconds > 2500)
+                {
+                    quitEvent.Set();   
+                }
                 m_sw.Restart();
             }
         }
