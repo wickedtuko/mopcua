@@ -143,6 +143,7 @@ namespace opcuac
         static bool m_sw_init = true;
         static bool is_console_out = true;
         static int count = 0;
+        static int node_count = 0; //number of node IDs loaded
 
         public OpcClient(string _endpointURL, string _nodeIdToSubscribe, string _nodeIdFile, bool _autoAccept, int _stopTimeout)
         {
@@ -276,9 +277,10 @@ namespace opcuac
                     };
                     list.Add(item);
                     //Console.WriteLine("{1}: Adding {0}", line, ++cnt);
+                    node_count++;
                 }
                 sw.Stop();
-                Console.WriteLine("Loading node IDs...done in {0}", sw.Elapsed);
+                Console.WriteLine("Loading node IDs...done in {0} for node count {1}", sw.Elapsed, node_count);
             } else {
                 var nodeIds = new List<NodeId> { new NodeId(nodeIdToSubscribe) };
                 var dispNames = new List<string>();
@@ -363,7 +365,7 @@ namespace opcuac
 
             if(m_sw_init) { m_sw.Start(); m_sw_init = false; }
             count++;
-            if ((count % 5000) == 0)
+            if ((count % node_count) == 0)
             {
                 foreach (var value in item.DequeueValues())
                 {
