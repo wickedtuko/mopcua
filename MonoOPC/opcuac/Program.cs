@@ -418,12 +418,22 @@ namespace opcuac
                     sw = new StreamWriter(fileName, true, Encoding.UTF8, 65536);
                 }
 
-                var data = string.Format("{0},{1},{2},{3}", item.ResolvedNodeId, value.Value, value.SourceTimestamp.ToLocalTime().ToString("MM/dd/yyyy hh:mm:ss.fff tt"), value.StatusCode);
+                //var data = string.Format("{0},{1},{2},{3}", item.ResolvedNodeId, value.Value, value.SourceTimestamp.ToLocalTime().ToString("MM/dd/yyyy hh:mm:ss.fff tt"), value.StatusCode);
+                //var data = string.Join(",", item.ResolvedNodeId, value.Value, value.SourceTimestamp);
+                lock(sb)
+                {
+                    sb.Append(item.ResolvedNodeId);
+                    sb.Append(",");
+                    sb.Append(value.Value);
+                    sb.Append(",");
+                    sb.AppendLine(value.SourceTimestamp.ToString("MM/dd/yyyy hh:mm:ss.fff tt"));
+                }
                 //sb.AppendLine(data);
-                lock(sw) { sw.WriteLine(data); }
+                //lock(sw) { sw.WriteLine(data); }
 
                 if (item.ResolvedNodeId.ToString().Contains(last_node_id))
                 {
+                    var data = string.Join(",", item.ResolvedNodeId, value.Value, value.SourceTimestamp);
                     Console.WriteLine(data);
                     cycle_count++;
                     Console.WriteLine("Elapsed time : {0}, count : {1}, cycle count : {2}", m_sw.Elapsed, count, cycle_count);
@@ -434,10 +444,24 @@ namespace opcuac
                     }
                     m_sw.Restart();
 
+                    lock(sb)
+                    {
+                        lock (sw)
+                        {
+                            sw.Write(sb.ToString());
+                            sb.Clear();
+                        }
+                    }
                     if (cycle_count % (60 * 5) == 0) //time to write the file
                     {
-                        sw.Close();
-                        sw = null;
+                        lock (sb)
+                        {
+                            lock (sw)
+                            {
+                                sw.Dispose();
+                                sw = null;
+                            }
+                        }
                     }
                 }
             }
