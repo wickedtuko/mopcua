@@ -120,10 +120,10 @@ namespace opcuac
                 options.WriteOptionDescriptions(Console.Out);
                 return (int)ExitCode.ErrorInvalidCommandLine;
             }
-
+            var start = DateTime.Now;
             OpcClient client = new OpcClient(endpointURL, nodeIdToSubscribe, nodeIdFile, autoAccept, stopTimeout);
             client.Run();
-
+            Console.WriteLine("Runtime : {0}", DateTime.Now - start);
             return (int)OpcClient.ExitCode;
         }
     }
@@ -141,8 +141,12 @@ namespace opcuac
         static ExitCode exitCode;
         static Stopwatch m_sw = new Stopwatch();
         static bool m_sw_init = true;
-        static bool is_console_out = true;
+        //static bool is_console_out = true;
         static int count = 0;
+        static int node_count = 0; //marker by number of node IDs loaded
+        static ManualResetEvent quitEvent;
+        static string last_node_id; //marker by node id
+        static int cycle_count = 0; //number of marker counts
 
         public OpcClient(string _endpointURL, string _nodeIdToSubscribe, string _nodeIdFile, bool _autoAccept, int _stopTimeout)
         {
@@ -166,7 +170,7 @@ namespace opcuac
                 return;
             }
 
-            ManualResetEvent quitEvent = new ManualResetEvent(false);
+            quitEvent = new ManualResetEvent(false);
             try
             {
                 Console.CancelKeyPress += (sender, eArgs) =>
@@ -254,24 +258,34 @@ namespace opcuac
 
             var list = new List<MonitoredItem>();
 
+            var sw = new Stopwatch();
             if (nodeIdFile.Length > 0)
             {
                 System.IO.StreamReader file = new System.IO.StreamReader(nodeIdFile);
                 string line;
+                
+                sw.Start();
+                Console.WriteLine("Loading node IDs...");
+                //int cnt = 0;
                 while ((line = file.ReadLine()) != null)
                 {
-                    var nodeIds = new List<NodeId> { new NodeId(line) };
-                    var dispNames = new List<string>();
-                    var errors = new List<ServiceResult>();
-                    session.ReadDisplayName(nodeIds, out dispNames, out errors);
-                    var _displayName = dispNames[0];
+                    //var nodeIds = new List<NodeId> { new NodeId(line) };
+                    //var dispNames = new List<string>();
+                    //var errors = new List<ServiceResult>();
+                    //session.ReadDisplayName(nodeIds, out dispNames, out errors);
+                    //var _displayName = dispNames[0];
                     var item = new MonitoredItem(subscription.DefaultItem)
                     {
-                        DisplayName = _displayName,
+                        //DisplayName = _displayName,
                         StartNodeId = line
                     };
                     list.Add(item);
+                    //Console.WriteLine("{1}: Adding {0}", line, ++cnt);
+                    node_count++;
+                    last_node_id = line;
                 }
+                sw.Stop();
+                Console.WriteLine("Loading node IDs...done in {0} for node count {1}", sw.Elapsed, node_count);
             } else {
                 var nodeIds = new List<NodeId> { new NodeId(nodeIdToSubscribe) };
                 var dispNames = new List<string>();
@@ -290,9 +304,12 @@ namespace opcuac
             subscription.AddItems(list);
 
             Console.WriteLine("7 - Add the subscription to the session.");
+            sw.Start();
             exitCode = ExitCode.ErrorAddSubscription;
             session.AddSubscription(subscription);
             subscription.Create();
+            sw.Stop();
+            Console.WriteLine("Create subscription took {0}", sw.Elapsed);
 
             Console.WriteLine("8 - Running...Press Ctrl-C to exit...");
             exitCode = ExitCode.ErrorRunning;
@@ -330,28 +347,65 @@ namespace opcuac
 
         private static void OnNotification(MonitoredItem item, MonitoredItemNotificationEventArgs e)
         {
-            if(m_sw_init) { m_sw.Start(); m_sw_init = false; }            
-            if (m_sw.ElapsedMilliseconds < 1000) 
+            //========== by time elapsed
+            //if(m_sw_init) { m_sw.Start(); m_sw_init = false; }            
+            //if (m_sw.ElapsedMilliseconds < 1000) 
+            //{
+            //    count++;
+            //    return; 
+            //}
+            //else
+            //{
+            //    is_console_out = true;
+            //    m_sw.Restart();
+            //}
+
+            //if (is_console_out)
+            //{
+            //    foreach (var value in item.DequeueValues())
+            //    {
+            //        Console.WriteLine("{0}: {1}, {2}, {3}", item.DisplayName, value.Value, value.SourceTimestamp.ToLocalTime().ToString("MM/dd/yyyy hh:mm:ss.fff tt"), value.StatusCode);
+            //    }
+
+            //    is_console_out = false;
+            //    Console.WriteLine("Node count : {0}", count);
+            //    count = 0;
+            //}
+
+            //======by node count
+            //if(m_sw_init) { m_sw.Start(); m_sw_init = false; }
+            //count++;
+            //if ((count % node_count) == 0)
+            //{
+            //    foreach (var value in item.DequeueValues())
+            //    {
+            //        Console.WriteLine("{0}: {1}, {2}, {3}", item.ResolvedNodeId, value.Value, value.SourceTimestamp.ToLocalTime().ToString("MM/dd/yyyy hh:mm:ss.fff tt"), value.StatusCode);
+            //    }
+            //    Console.WriteLine("Elapsed time : {0}", m_sw.Elapsed);
+            //    if (m_sw.ElapsedMilliseconds > 2500)
+            //    {
+            //        quitEvent.Set();   
+            //    }
+            //    m_sw.Restart();
+            //}
+
+            //======by last_node_id
+            if (m_sw_init) { m_sw.Start(); m_sw_init = false; }
+            count++;
+            foreach (var value in item.DequeueValues())
             {
-                count++;
-                return; 
-            }
-            else
-            {
-                is_console_out = true;
-                m_sw.Restart();
-            }
-            
-            if (is_console_out)
-            {
-                foreach (var value in item.DequeueValues())
+                if (item.ResolvedNodeId.ToString().Contains(last_node_id))
                 {
-                    Console.WriteLine("{0}: {1}, {2}, {3}", item.DisplayName, value.Value, value.SourceTimestamp.ToLocalTime().ToString("MM/dd/yyyy hh:mm:ss.fff tt"), value.StatusCode);
+                    Console.WriteLine("{0}: {1}, {2}, {3}", item.ResolvedNodeId, value.Value, value.SourceTimestamp.ToLocalTime().ToString("MM/dd/yyyy hh:mm:ss.fff tt"), value.StatusCode);
+                    cycle_count++;
+                    Console.WriteLine("Elapsed time : {0}, count : {1}, cycle count : {2}", m_sw.Elapsed, count, cycle_count);
+                    count = 0;
+                    if (m_sw.ElapsedMilliseconds > 2500)
+                    {
+                        quitEvent.Set();
+                    }
+                    m_sw.Restart();
                 }
-                
-                is_console_out = false;
-                Console.WriteLine("Node count : {0}", count);
-                count = 0;
             }
         }
 
@@ -370,6 +424,5 @@ namespace opcuac
                 }
             }
         }
-
     }
 }
