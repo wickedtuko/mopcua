@@ -9,8 +9,8 @@ nuget restore MonoOPC.sln
 msbuild
 ```
 Tested on:  
-- OS: Ubuntu 20.10, Debian 10, Pop!\_OS 20.10  
-- Mono: 6.12.0.107
+- Ubuntu 20.10, Debian 10, Pop!\_OS 20.10, Mono 6.12.0.107  
+- Windows 10 1909/20H2, VS 2019, .Net 4.7.2
 
 ## Mono OPC UA Client
 Console Mono OPC UA client - subscribe to items
