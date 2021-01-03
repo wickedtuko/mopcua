@@ -254,7 +254,7 @@ namespace opcuac
             exitCode = ExitCode.ErrorCreateSession;
             var endpointConfiguration = EndpointConfiguration.Create(config);
             var endpoint = new ConfiguredEndpoint(null, selectedEndpoint, endpointConfiguration);
-            session = await Session.Create(config, endpoint, false, "OPC UA Console Client", 60000, new UserIdentity(new AnonymousIdentityToken()), null);
+            session = await Session.Create(config, endpoint, false, "OPC UA Console Client - " + System.Environment.MachineName, 60000, new UserIdentity(new AnonymousIdentityToken()), null);
 
             // register keep alive handler
             session.KeepAlive += Client_KeepAlive;
@@ -308,6 +308,8 @@ namespace opcuac
                     StartNodeId = nodeIdToSubscribe
                 };
                 list.Add(item);
+                node_count = 1;
+                last_node_id = nodeIdToSubscribe;
             }
 
             list.ForEach(i => i.Notification += OnNotification);
