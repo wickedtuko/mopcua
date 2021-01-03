@@ -34,6 +34,8 @@ using Opc.Ua.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -147,6 +149,8 @@ namespace opcuac
         static ManualResetEvent quitEvent;
         static string last_node_id; //marker by node id
         static int cycle_count = 0; //number of marker counts
+        static StreamWriter sw = null;
+        static StringBuilder sb = new StringBuilder();
 
         public OpcClient(string _endpointURL, string _nodeIdToSubscribe, string _nodeIdFile, bool _autoAccept, int _stopTimeout)
         {
@@ -191,6 +195,12 @@ namespace opcuac
             {
                 exitCode = ExitCode.ErrorNoKeepAlive;
                 return;
+            }
+
+            if (sw != null)
+            {
+                sw.Close();
+                sw.Dispose();
             }
 
             exitCode = ExitCode.Ok;
@@ -394,9 +404,37 @@ namespace opcuac
             count++;
             foreach (var value in item.DequeueValues())
             {
+
+                if (sw == null)
+                {
+                    var basePath = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
+                    var dataFolder = Path.Combine(basePath, "data");
+                    if (!File.Exists(dataFolder))
+                    {
+                        Directory.CreateDirectory(dataFolder);
+                    }
+
+                    var fileName = Path.Combine(dataFolder, DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss") + ".txt");
+                    sw = new StreamWriter(fileName, true, Encoding.UTF8, 65536);
+                }
+
+                //var data = string.Format("{0},{1},{2},{3}", item.ResolvedNodeId, value.Value, value.SourceTimestamp.ToLocalTime().ToString("MM/dd/yyyy hh:mm:ss.fff tt"), value.StatusCode);
+                //var data = string.Join(",", item.ResolvedNodeId, value.Value, value.SourceTimestamp);
+                lock(sb)
+                {
+                    sb.Append(item.ResolvedNodeId);
+                    sb.Append(",");
+                    sb.Append(value.Value);
+                    sb.Append(",");
+                    sb.AppendLine(value.SourceTimestamp.ToString("MM/dd/yyyy hh:mm:ss.fff tt"));
+                }
+                //sb.AppendLine(data);
+                //lock(sw) { sw.WriteLine(data); }
+
                 if (item.ResolvedNodeId.ToString().Contains(last_node_id))
                 {
-                    Console.WriteLine("{0}: {1}, {2}, {3}", item.ResolvedNodeId, value.Value, value.SourceTimestamp.ToLocalTime().ToString("MM/dd/yyyy hh:mm:ss.fff tt"), value.StatusCode);
+                    var data = string.Join(",", item.ResolvedNodeId, value.Value, value.SourceTimestamp.ToLocalTime().ToString("MM/dd/yyyy hh:mm:ss.fff tt"));
+                    Console.WriteLine(data);
                     cycle_count++;
                     Console.WriteLine("Elapsed time : {0}, count : {1}, cycle count : {2}", m_sw.Elapsed, count, cycle_count);
                     count = 0;
@@ -405,6 +443,26 @@ namespace opcuac
                         quitEvent.Set();
                     }
                     m_sw.Restart();
+
+                    lock(sb)
+                    {
+                        lock (sw)
+                        {
+                            sw.Write(sb.ToString());
+                            sb.Clear();
+                        }
+                    }
+                    if (cycle_count % (60 * 5) == 0) //time to write the file
+                    {
+                        lock (sb)
+                        {
+                            lock (sw)
+                            {
+                                sw.Dispose();
+                                sw = null;
+                            }
+                        }
+                    }
                 }
             }
         }
