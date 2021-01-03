@@ -1,13 +1,20 @@
 # mopcua
 Mono OPC UA 
 
-To build from the command line
+To build from the command line for Mono
 ```shell
 sudo apt install nuget
 cd ~/<solution_dir>
 nuget restore MonoOPC.sln
-msbuild
+msbuild  opcuac/opcuac.csproj
 ```
+
+To build from the command line for dotnet  
+```shell
+cd ~/<solution_dir>/opcuac
+dotnet build dotopcuac.csproj
+```
+
 Tested on:  
 - Ubuntu 20.10, Debian 10, Pop!\_OS 20.10, Mono 6.12.0.107  
 - Windows 10 1909/20H2, VS 2019, .Net 4.7.2
