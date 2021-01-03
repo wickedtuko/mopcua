@@ -433,7 +433,7 @@ namespace opcuac
 
                 if (item.ResolvedNodeId.ToString().Contains(last_node_id))
                 {
-                    var data = string.Join(",", item.ResolvedNodeId, value.Value, value.SourceTimestamp);
+                    var data = string.Join(",", item.ResolvedNodeId, value.Value, value.SourceTimestamp.ToLocalTime().ToString("MM/dd/yyyy hh:mm:ss.fff tt"));
                     Console.WriteLine(data);
                     cycle_count++;
                     Console.WriteLine("Elapsed time : {0}, count : {1}, cycle count : {2}", m_sw.Elapsed, count, cycle_count);
