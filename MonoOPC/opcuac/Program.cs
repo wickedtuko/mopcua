@@ -72,12 +72,14 @@ namespace opcuac
             string endpointURL =  "";
             string nodeIdToSubscribe = "";
             string nodeIdFile = "";
+            long subscriptionUpdateTimeout = 20_000;
 
             Mono.Options.OptionSet options = new Mono.Options.OptionSet {
                 { "h|help", "show this message and exit", h => showHelp = h != null },
                 { "a|autoaccept", "auto accept certificates (for testing only)", a => autoAccept = a != null },
                 { "t|timeout=", "the number of seconds until the client stops.", (int t) => stopTimeout = t },
                 { "url=", "Endpoint URL", url => endpointURL = url},
+                { "subscriptionUpdateTimeout=", "Subscription update timeout (ms)", (long option) => subscriptionUpdateTimeout = option},
                 { "nodeID:", "Node ID to subscribe", option => nodeIdToSubscribe = option},
                 { "NodeFile:", "List of Node IDs to subscribe", option => nodeIdFile = option}
             };
@@ -123,7 +125,7 @@ namespace opcuac
                 return (int)ExitCode.ErrorInvalidCommandLine;
             }
             var start = DateTime.Now;
-            OpcClient client = new OpcClient(endpointURL, nodeIdToSubscribe, nodeIdFile, autoAccept, stopTimeout);
+            OpcClient client = new OpcClient(endpointURL, nodeIdToSubscribe, nodeIdFile, autoAccept, stopTimeout, subscriptionUpdateTimeout);
             client.Run();
             Console.WriteLine("Runtime : {0}", DateTime.Now - start);
             return (int)OpcClient.ExitCode;
@@ -143,7 +145,6 @@ namespace opcuac
         static ExitCode exitCode;
         static Stopwatch m_sw = new Stopwatch();
         static bool m_sw_init = true;
-        //static bool is_console_out = true;
         static int count = 0;
         static int node_count = 0; //marker by number of node IDs loaded
         static ManualResetEvent quitEvent;
@@ -151,14 +152,19 @@ namespace opcuac
         static int cycle_count = 0; //number of marker counts
         static StreamWriter sw = null;
         static StringBuilder sb = new StringBuilder();
+        static long subscriptionUpdateTimeout = 0;
+        static long high_water_mark_subscription_update_delay = 0;
+        static long high_water_mark_count = 0;
+        static long low_water_mark_count = long.MaxValue;
 
-        public OpcClient(string _endpointURL, string _nodeIdToSubscribe, string _nodeIdFile, bool _autoAccept, int _stopTimeout)
+        public OpcClient(string _endpointURL, string _nodeIdToSubscribe, string _nodeIdFile, bool _autoAccept, int _stopTimeout, long _subscriptionUpdateTimeout)
         {
             endpointURL = _endpointURL;
             nodeIdToSubscribe = _nodeIdToSubscribe;
             nodeIdFile = _nodeIdFile;
             autoAccept = _autoAccept;
             clientRunTime = _stopTimeout <= 0 ? Timeout.Infinite : _stopTimeout * 1000;
+            subscriptionUpdateTimeout = _subscriptionUpdateTimeout;
         }
 
         public void Run()
@@ -438,9 +444,13 @@ namespace opcuac
                     var data = string.Join(",", item.ResolvedNodeId, value.Value, value.SourceTimestamp.ToLocalTime().ToString("MM/dd/yyyy hh:mm:ss.fff tt"));
                     Console.WriteLine(data);
                     cycle_count++;
-                    Console.WriteLine("Elapsed time : {0}, count : {1}, cycle count : {2}", m_sw.Elapsed, count, cycle_count);
+                    if (m_sw.ElapsedMilliseconds > high_water_mark_subscription_update_delay) { high_water_mark_subscription_update_delay = m_sw.ElapsedMilliseconds; }
+                    if (count > high_water_mark_count) { high_water_mark_count = count; }
+                    if (count < low_water_mark_count) { low_water_mark_count = count; }
+                    Console.WriteLine("Elapsed time: {0}, HWM elapsed: {1}, count: {2}, HWM count: {3}, LWM count {4}, cycle count: {5}", m_sw.Elapsed, 
+                        high_water_mark_subscription_update_delay ,count, high_water_mark_count, low_water_mark_count, cycle_count);
                     count = 0;
-                    if (m_sw.ElapsedMilliseconds > 2500)
+                    if (m_sw.ElapsedMilliseconds > subscriptionUpdateTimeout)
                     {
                         quitEvent.Set();
                     }
