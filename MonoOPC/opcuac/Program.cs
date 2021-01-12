@@ -151,6 +151,7 @@ namespace opcuac
         static string last_node_id; //marker by node id
         static int cycle_count = 0; //number of marker counts
         static StreamWriter sw = null;
+        static Object sw_lock = new Object();
         static StringBuilder sb = new StringBuilder();
         static long subscriptionUpdateTimeout = 0;
         static long high_water_mark_subscription_update_delay = 0;
@@ -269,7 +270,7 @@ namespace opcuac
             exitCode = ExitCode.ErrorCreateSubscription;
             var subscription = new Subscription(session.DefaultSubscription) { PublishingInterval = 1000 };
 
-            Console.WriteLine("6 - Add a list of items (server current time and status) to the subscription.");
+            Console.WriteLine("6 - Add item(s) to the subscription.");
             exitCode = ExitCode.ErrorMonitoredItem;
 
             var list = new List<MonitoredItem>();
@@ -412,7 +413,7 @@ namespace opcuac
             count++;
             foreach (var value in item.DequeueValues())
             {
-                lock (sw)
+                lock (sw_lock)
                 {
                     if (sw == null)
                     {
