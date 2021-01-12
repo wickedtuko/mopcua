@@ -412,18 +412,20 @@ namespace opcuac
             count++;
             foreach (var value in item.DequeueValues())
             {
-
-                if (sw == null)
+                lock (sw)
                 {
-                    var basePath = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
-                    var dataFolder = Path.Combine(basePath, "data");
-                    if (!File.Exists(dataFolder))
+                    if (sw == null)
                     {
-                        Directory.CreateDirectory(dataFolder);
-                    }
+                        var basePath = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
+                        var dataFolder = Path.Combine(basePath, "data");
+                        if (!File.Exists(dataFolder))
+                        {
+                            Directory.CreateDirectory(dataFolder);
+                        }
 
-                    var fileName = Path.Combine(dataFolder, DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss") + ".txt");
-                    sw = new StreamWriter(fileName, true, Encoding.UTF8, 65536);
+                        var fileName = Path.Combine(dataFolder, DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss") + ".txt");
+                        sw = new StreamWriter(fileName, true, Encoding.UTF8, 65536);
+                    }
                 }
 
                 //var data = string.Format("{0},{1},{2},{3}", item.ResolvedNodeId, value.Value, value.SourceTimestamp.ToLocalTime().ToString("MM/dd/yyyy hh:mm:ss.fff tt"), value.StatusCode);
