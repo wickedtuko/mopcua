@@ -366,49 +366,6 @@ namespace opcuac
 
         private static void OnNotification(MonitoredItem item, MonitoredItemNotificationEventArgs e)
         {
-            //========== by time elapsed
-            //if(m_sw_init) { m_sw.Start(); m_sw_init = false; }            
-            //if (m_sw.ElapsedMilliseconds < 1000) 
-            //{
-            //    count++;
-            //    return; 
-            //}
-            //else
-            //{
-            //    is_console_out = true;
-            //    m_sw.Restart();
-            //}
-
-            //if (is_console_out)
-            //{
-            //    foreach (var value in item.DequeueValues())
-            //    {
-            //        Console.WriteLine("{0}: {1}, {2}, {3}", item.DisplayName, value.Value, value.SourceTimestamp.ToLocalTime().ToString("MM/dd/yyyy hh:mm:ss.fff tt"), value.StatusCode);
-            //    }
-
-            //    is_console_out = false;
-            //    Console.WriteLine("Node count : {0}", count);
-            //    count = 0;
-            //}
-
-            //======by node count
-            //if(m_sw_init) { m_sw.Start(); m_sw_init = false; }
-            //count++;
-            //if ((count % node_count) == 0)
-            //{
-            //    foreach (var value in item.DequeueValues())
-            //    {
-            //        Console.WriteLine("{0}: {1}, {2}, {3}", item.ResolvedNodeId, value.Value, value.SourceTimestamp.ToLocalTime().ToString("MM/dd/yyyy hh:mm:ss.fff tt"), value.StatusCode);
-            //    }
-            //    Console.WriteLine("Elapsed time : {0}", m_sw.Elapsed);
-            //    if (m_sw.ElapsedMilliseconds > 2500)
-            //    {
-            //        quitEvent.Set();   
-            //    }
-            //    m_sw.Restart();
-            //}
-
-            //======by last_node_id
             if (m_sw_init) { m_sw.Start(); m_sw_init = false; }
             count++;
             foreach (var value in item.DequeueValues())
@@ -439,8 +396,6 @@ namespace opcuac
                     sb.Append(",");
                     sb.AppendLine(value.SourceTimestamp.ToString("MM/dd/yyyy hh:mm:ss.fff tt"));
                 }
-                //sb.AppendLine(data);
-                //lock(sw) { sw.WriteLine(data); }
 
                 if (item.ResolvedNodeId.ToString().Contains(last_node_id))
                 {
