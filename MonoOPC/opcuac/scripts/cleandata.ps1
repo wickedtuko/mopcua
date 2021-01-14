@@ -12,7 +12,6 @@ while($true)
     {
         Write-Host Deleting : $logs[0].FullName
         Remove-Item $logs[0].FullName
-        break
     } else {
         Write-Host  [$(Get-Date)] - Sleeping for $sleep_delay seconds
         Start-Sleep -Seconds $sleep_delay
