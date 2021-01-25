@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 $sleep_delay = 60
-$max_files = 10
+$max_files = 20
 # $root_path = Split-Path $PSScriptRoot
 # $data_path = Join-Path -Path $root_path  -ChildPath "data"
 $data_path = "C:\gitprj\mopcua\MonoOPC\opcuac\bin\Debug\data"
